@@ -4,6 +4,8 @@
 #include "WiFiUdp.h"
 #include <SoftwareSerial.h>
 
+#define LOG(x) Serial.println(x)
+
 #define UDP_TX_PACKET_MAX_SIZE 8192
  
 #define AP_SSID "EServer"
@@ -25,7 +27,6 @@
 
 #define TEMP_FILE "/"
 
-
 class EServer {
     bool isSenderAsked;
     char packet[UDP_TX_PACKET_MAX_SIZE];
@@ -45,7 +46,6 @@ class EServer {
     WiFiClass* wifi;
     SoftwareSerial *serverSerial;
     String _packetContent;
-    unsigned int tryResendPacket();
 
     int _timeOutCounter;
     
@@ -69,7 +69,7 @@ class EServer {
     void doStuffPacket();
     void continueRecievePacket();
 
-    void try
+    void  sendPackets();
     bool trySendDataToSerial();
     bool contactServer();
     void listenFromServer();

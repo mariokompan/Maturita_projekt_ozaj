@@ -30,17 +30,9 @@ void EServer::mainThread() {
         break;
       }
       case 2 : {
-        tryResendPacket();
+        sendPackets();
         break;
       }
-      //case 3 : {
-        //if (!_packetParams->isEmpty()){
-          //if (!trySendDataToSerial()){
-            //writeToCard();
-          //}
-       // }
-    //break;
-     // }
       default: 
         break;
     }
@@ -49,12 +41,6 @@ void EServer::mainThread() {
   }
 }
 
-unsigned int EServer::tryResendPacket() {
-  EStack tempStack = EStack(MAX_RESEND_BUFFER_SIZE);
- // if () {
-    
-//}
-}
 void EServer::checkPackets() {
   int packetSize = UDP->parsePacket();
   if (packetSize) {
@@ -101,7 +87,7 @@ void EServer::writeToCard(EDevice* tempDevice) {
 }
 
 void EServer::writeToDataToSendFile(){
-  _sdCard->writeData(TO_SEND_DATA, _packetParams);
+//  _sdCard->writeData(, _packetParams);
   Serial.println("Subor zapisany do dat na odoslanie");
 }
 
@@ -125,16 +111,22 @@ void EServer::printDevices() {
 bool EServer::tryAddDevice(EDevice* dev) {
   if (!tryFindDevice(dev->getId()) && _lWritten - 1 < DEV_COUNT) {
     EStack tempLast(1);
-    _sdCard->getData(dev->getLastSentFileName(),tempLast, -1);
-    int lastSentPacketFromFile = 0;
+    int pos = -1;
+    _sdCard->getData(dev->getLastSentFileName(),tempLast, pos);
+    String vLastSent = "";
     if (tempLast.isEmpty()) {
-      tempLast.push("0");
-      _sdCard->writeData(dev->getLastSentFileName(), *tempLast);
+      String tempdata = "0";
+      tempLast.push(tempdata);
+      _sdCard->writeData(dev->getLastSentFileName(), &tempLast);
     } else {
-      lastSentPacketFromFile = tempLast().pop().toInt();
+      vLastSent = tempLast.pop();
     }
-    dev->setLastSentPosition(_sdCard->getLastSentPacket(dev->getFileName(),lastSentPacketFromFile));
+
+    dev->setLastSentPosition(_sdCard->getLastSentPosition(dev->getFileName(),vLastSent.toInt()));
+    dev->setLIStored(_sdCard->getLIStored(dev->getFileName(), dev->getLSPos()));
+    dev->setLastIDSent(vLastSent);
     _devices[_lWritten] = dev;
+  
     _lWritten++;
     return true;
   }
@@ -215,6 +207,36 @@ bool EServer::trySendDataToSerial() {
   }
   return true;*/
 
+void EServer::sendPackets() {
+  String lastActIDSent[_lWritten] = {}; 
+  for (int i = 0; i < _lWritten; i++) {
+    lastActIDSent[i] = _devices[i]->getLastIDSent();
+    LOG(lastActIDSent[i]);
+    int tempPos = _devices[i]->getLSPos();
+    _sdCard->getData(_devices[i]->getFileName(),*_buffer, _devices[i]->getLSPos());
+    tempPos = _devices[i]->getLSPos() - tempPos;
+    lastActIDSent[i] = String(lastActIDSent[i].toInt() + tempPos);
+  } 
+  listenFromServer();
+  while (!_buffer->isEmpty()) {
+    contactServer();
+    if (_packetSent == 'X' && _responseSender == 'D') {
+        Serial.println("Posielam na server zo súboru na odoslanie");
+        trySendDataToSerial(); 
+        Serial.println("Posielam na server");
+        trySendDataToSerial();
+        _packetParams->clear();
+    } 
+    else if (_packetSent == 'Y' && _responseSender == 'D'){
+      Serial.println("Server neodpovedal");
+    }
+    delay(10);
+  }       
+  for (int i = 0; i < _lWritten; i++) {
+    _sdCard->replaceLISentFile(_devices[i]->getLastSentFileName(), lastActIDSent[i]);
+    LOG(lastActIDSent[i]);
+  }
+}
 
 void EServer::doStuffPacket() {
   if (_buffer->isEmpty() && _packetContent.isEmpty()) {
@@ -225,16 +247,13 @@ void EServer::doStuffPacket() {
   }
   char packetType = (_packetContent[0]);
   
-  listenFromServer();
-  
   if (!_packetContent.isEmpty()){
     switch (packetType) {
       case '1' : {
         parseParams();
         if (_packetParams->isEmpty()) {
           break;
-        }
-        //Serial.println(_packetContent);
+        }      
        _packetParams->pop();
         _packetContent = "";
         EDevice* newDevice = new EDevice();        
@@ -253,41 +272,15 @@ void EServer::doStuffPacket() {
         break;
       }
       case '2' : {
-        //printDevices();
-        //Serial.println(_timeOutCounter);
-        EDevice* tempDev; //pointer z ktorého budeš tahať názvo súboru
-        tryFindDevice(toInt(_packetParams->pop()), tempDev);
-        writeToCard(tempDev);
+        EDevice* tempDev =  nullptr; //pointer z ktorého budeš tahať názvo súboru
+        tryFindDevice(_packetParams->pop().toInt(), tempDev);
         
-        contactServer();
-        if (_packetSent == 'X' && _responseSender == 'D') {
-         // if (*getFromCard() != ""){
-            writeToDataToSendFile();
-          //  _packetContent = *getFromCard();
-            Serial.println("Posielam na server zo súboru na odoslanie");
-            trySendDataToSerial(); 
-          //}
-         // else{
-            Serial.println("Posielam na server");
-            trySendDataToSerial();
-            _packetParams->clear();
-        //  }
-          _timeOutCounter = 0;
-        } 
-        else if (_packetSent == 'Y' && _responseSender == 'D'){
-          _timeOutCounter ++;
-          Serial.println("Server neodpovedal");
+        if (tempDev != nullptr) {
+          tempDev->incLIS();
+          _packetParams->push(tempDev->getLIStored()); 
+          writeToCard(tempDev);
         }
-        if (_timeOutCounter > 100) {
-          Serial.println("Zapisujem na kartu");
-          parseParams();
-          _packetContent = "";
-          _packetParams->pop();
-          writeToDataToSendFile();
-          writeToCard();
-          _timeOutCounter = 0;
-        }      
-        
+
         break;
      }
       default:

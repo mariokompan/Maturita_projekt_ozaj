@@ -15,10 +15,12 @@ class ESD
 public:
   ESD();
   void getData(String fileName, EStack& stack, int& pos);
-  bool writeData(String fileName, EStack* data);
+  bool writeData(String fileName, EStack* data);  
+  void replaceLISentFile(String fileName, String content);
   bool createFile(String& fileName);
   void openFile(String fileName, bool type);
   void closeFile();
   int getLastSentPosition(String fileName, int lastSentPacketOld);
+  String getLIStored(String fileName, int lastSentPos);
   ~ESD();
 };

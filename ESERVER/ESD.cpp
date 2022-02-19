@@ -52,14 +52,15 @@ void ESD::getData(String fileName, EStack& stack, int& pos){
   }
   String temp;
   for(int i = 0; i < stack.getMaxSize(); i++){
-    Serial.println("Citam zo zasobnika");
+    Serial.println("Citam zo suboru");
     temp = _file->readStringUntil('\n');
     if (temp.isEmpty()) {
       return;
     }
-      stack.push(temp);
-      pos++;
+    stack.push(temp);
+    pos++;
   }
+
 }
 
 bool ESD::writeData(String fileName, EStack* data){
@@ -82,6 +83,26 @@ bool ESD::writeData(String fileName, EStack* data){
   return true;
 }
 
+String ESD::getLIStored(String fileName, int lastSentPos) {
+  String temp = "0";
+  String temp2 = "0";
+  openFile(fileName, false);
+  _file->seek(lastSentPos);
+  temp = _file->readStringUntil(';');
+  while (temp.isEmpty()) {
+    temp2 = temp;
+    _file->readStringUntil('\n');
+    temp = _file->readStringUntil(';');
+  }
+  return temp2;
+}
+void ESD::replaceLISentFile(String fileName, String content) {
+  closeFile();
+  *_file =  SD_MMC.open(fileName, FILE_WRITE); 
+  _file->print(content);
+  closeFile();
+}
+
 bool ESD::createFile(String& fileName){
   if (SD_MMC.exists(fileName)){
     return false;
@@ -89,8 +110,8 @@ bool ESD::createFile(String& fileName){
   File lFile = SD_MMC.open(fileName, FILE_WRITE);
   lFile.close();
   return true;
-  
 }
+
 void ESD::openFile(String fileName, bool type){
   if (_isOpen){
     closeFile();

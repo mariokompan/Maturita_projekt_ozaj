@@ -11,6 +11,9 @@ class EDevice {
   String _fileName;
   String _lastSentFileName;
   int _lastSentPosition;
+  String _lastIDPacketSent = "";
+  unsigned int _autoinc;
+  String _lastIDStored = "";
 
 public:
   EDevice(const int id, String ip, String room);
@@ -21,14 +24,19 @@ public:
   void setId(int id) {_id = id;};
   void setIp(String ip) {_ipaddr = ip;};
   void setRoom(String room) {_room = room;};
-  void setLastSentPosition(int lS) {_lastSentPosition = lS;}
-  
+  void setLastSentPosition(int lS) {_lastSentPosition = lS;};
+  void setLastIDSent(String IDPacket) {_lastIDPacketSent = IDPacket;};
+  void setLIStored(String lIS) {_lastIDStored = lIS;};
+
   int getId() {return _id;};
   String getIpAddr() {return _ipaddr;};
-  String getRoom() {return _room;};
-  int getLSPos() {return _lastSentPosition;}
+  void incLIS() {_lastIDStored = String(_lastIDStored.toInt() + 1);};
+  String getLIStored() {return _lastIDStored;}; // ID Posledne ulozene
+  String getLastIDSent() {return _lastIDPacketSent;}; // ID posledne odoslane
+  String getRoom() {return _room;}; 
+  int& getLSPos() {return _lastSentPosition;}// pozicia v subore
   bool getSending() {return _sending;};
   String& getFileName() {return _fileName;}
-  String& getLastSentFileName() {return _lastSentFileName;}
+  String getLastSentFileName() {return _lastSentFileName;}
   bool setActvie(bool active){_active = active;};
 };
