@@ -40,6 +40,7 @@ String ESD::getFirstRow(String fileName) {
 }
 */
 void ESD::getData(String fileName, EStack& stack, int& pos){
+  Serial.println("Subor:" + fileName);
   if (!SD_MMC.exists(fileName)){
     Serial.println("Nenasiel som subor");
     return;
@@ -64,6 +65,7 @@ void ESD::getData(String fileName, EStack& stack, int& pos){
 }
 
 bool ESD::writeData(String fileName, EStack* data){
+  createFile(fileName);
   openFile(fileName, true);
   while (!data->isEmpty()){
     Serial.println(fileName);
@@ -89,7 +91,7 @@ String ESD::getLIStored(String fileName, int lastSentPos) {
   openFile(fileName, false);
   _file->seek(lastSentPos);
   temp = _file->readStringUntil(';');
-  while (temp.isEmpty()) {
+  while (!temp.isEmpty()) {
     temp2 = temp;
     _file->readStringUntil('\n');
     temp = _file->readStringUntil(';');
@@ -103,10 +105,11 @@ void ESD::replaceLISentFile(String fileName, String content) {
   closeFile();
 }
 
-bool ESD::createFile(String& fileName){
+bool ESD::createFile(String fileName){
   if (SD_MMC.exists(fileName)){
     return false;
   }
+  Serial.println("Vytvoril som subor" + fileName);
   File lFile = SD_MMC.open(fileName, FILE_WRITE);
   lFile.close();
   return true;

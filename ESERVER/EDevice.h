@@ -12,7 +12,6 @@ class EDevice {
   String _lastSentFileName;
   int _lastSentPosition;
   String _lastIDPacketSent = "";
-  unsigned int _autoinc;
   String _lastIDStored = "";
 
 public:
@@ -27,6 +26,16 @@ public:
   void setLastSentPosition(int lS) {_lastSentPosition = lS;};
   void setLastIDSent(String IDPacket) {_lastIDPacketSent = IDPacket;};
   void setLIStored(String lIS) {_lastIDStored = lIS;};
+  void setFName();
+
+  void vypisInfo(){
+  Serial.println(_id);
+  Serial.println(_room); 
+  Serial.println(_fileName); 
+  Serial.println(_lastSentFileName);
+  Serial.println(_lastSentPosition);
+  Serial.println(_lastIDStored);
+  }
 
   int getId() {return _id;};
   String getIpAddr() {return _ipaddr;};

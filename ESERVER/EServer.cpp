@@ -30,7 +30,7 @@ void EServer::mainThread() {
         break;
       }
       case 2 : {
-        sendPackets();
+        //sendPackets();
         break;
       }
       default: 
@@ -62,9 +62,10 @@ void EServer::checkPackets() {
     Serial.println(packetFill);
 
     Serial.print("Pocet packetov v zasobniku : ");
-    Serial.println(_buffer->getSize());
+    
 
     _buffer->push(packetFill);
+    Serial.println(_buffer->getSize());
   }
 }
 
@@ -75,7 +76,8 @@ void EServer::writeToCard(EDevice* tempDevice) {
   String idDevice = String(tempDevice->getId());
   Serial.println(idDevice);
   Serial.println(fileName);
-  if (tryFindDevice(idDevice.toInt())) {
+  
+  if (tryFindDevice(idDevice.toInt()) != nullptr) {
     _sdCard->writeData(fileName, _packetParams); 
     Serial.println("Subor zapisany");
   } else {
@@ -109,19 +111,19 @@ void EServer::printDevices() {
 }
 
 bool EServer::tryAddDevice(EDevice* dev) {
-  if (!tryFindDevice(dev->getId()) && _lWritten - 1 < DEV_COUNT) {
+  if (tryFindDevice(dev->getId()) == nullptr && _lWritten - 1 < DEV_COUNT) {
     EStack tempLast(1);
     int pos = -1;
     _sdCard->getData(dev->getLastSentFileName(),tempLast, pos);
-    String vLastSent = "";
+    String vLastSent = "0";
     if (tempLast.isEmpty()) {
       String tempdata = "0";
       tempLast.push(tempdata);
       _sdCard->writeData(dev->getLastSentFileName(), &tempLast);
+      _sdCard->closeFile();
     } else {
       vLastSent = tempLast.pop();
     }
-
     dev->setLastSentPosition(_sdCard->getLastSentPosition(dev->getFileName(),vLastSent.toInt()));
     dev->setLIStored(_sdCard->getLIStored(dev->getFileName(), dev->getLSPos()));
     dev->setLastIDSent(vLastSent);
@@ -133,16 +135,13 @@ bool EServer::tryAddDevice(EDevice* dev) {
   delete dev;
   return false;
 }
-
-bool EServer::tryFindDevice(int id, EDevice* dev) {
-  for (int i = 0; i < _lWritten; i++) {
+EDevice* EServer::tryFindDevice(int id){
+  for(int i = 0; i < _lWritten; i++){
     if (_devices[i]->getId() == id)  {
-      dev = _devices[i];
-      return true;
+      return _devices[i]; 
     }
   }
-  dev = nullptr;
-  return false;
+  return nullptr;
 }
 
 void EServer::parseParams() {
@@ -158,6 +157,7 @@ void EServer::parseParams() {
       packetUnit += v;
     }
   }
+  _packetContent = "";
 }
 
 /*Ak je hodnota v packetSent X tak neposlal packet 
@@ -210,8 +210,9 @@ bool EServer::trySendDataToSerial() {
 void EServer::sendPackets() {
   String lastActIDSent[_lWritten] = {}; 
   for (int i = 0; i < _lWritten; i++) {
+    if (_devices[i]->getLIStored() == _devices[i]->getLastIDSent()){continue;}
     lastActIDSent[i] = _devices[i]->getLastIDSent();
-    LOG(lastActIDSent[i]);
+    //Serial.println(lastActIDSent[i]);
     int tempPos = _devices[i]->getLSPos();
     _sdCard->getData(_devices[i]->getFileName(),*_buffer, _devices[i]->getLSPos());
     tempPos = _devices[i]->getLSPos() - tempPos;
@@ -234,7 +235,7 @@ void EServer::sendPackets() {
   }       
   for (int i = 0; i < _lWritten; i++) {
     _sdCard->replaceLISentFile(_devices[i]->getLastSentFileName(), lastActIDSent[i]);
-    LOG(lastActIDSent[i]);
+    Serial.println(lastActIDSent[i]);
   }
 }
 
@@ -262,6 +263,10 @@ void EServer::doStuffPacket() {
         newDevice->setId(id.toInt());
         newDevice->setIp(_packetParams->pop());   
         newDevice->setRoom(_packetParams->pop());
+        newDevice->setFName();
+        _sdCard->createFile(newDevice->getFileName());
+
+        newDevice->vypisInfo();
        
         if (tryAddDevice(newDevice)) {
           Serial.println("Zariadenie bolo pridane");
@@ -272,15 +277,30 @@ void EServer::doStuffPacket() {
         break;
       }
       case '2' : {
-        EDevice* tempDev =  nullptr; //pointer z ktorého budeš tahať názvo súboru
-        tryFindDevice(_packetParams->pop().toInt(), tempDev);
+        parseParams();
+        //_packetParams->vypisZasobnika();
+        _packetParams->pop();
+        _packetParams->pop();
+        int findedId = _packetParams->pop().toInt();
         
-        if (tempDev != nullptr) {
-          tempDev->incLIS();
-          _packetParams->push(tempDev->getLIStored()); 
-          writeToCard(tempDev);
+        EDevice* findedDev = tryFindDevice(findedId);
+        Serial.println(findedDev->getId());
+        Serial.println("");
+        Serial.println(findedDev->getFileName());
+        Serial.println("");
+        Serial.println(findedDev->getRoom());
+        Serial.println("");
+        findedDev->vypisInfo();
+        if (findedDev != nullptr) {
+          findedDev->incLIS();
+          _packetParams->pushFront(findedDev->getLIStored());
+          findedDev->vypisInfo();
+          writeToCard(findedDev);
+          findedDev->vypisInfo();
         }
-
+        else{
+          _packetParams->clear();
+        }
         break;
      }
       default:

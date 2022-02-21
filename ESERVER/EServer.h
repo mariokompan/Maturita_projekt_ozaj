@@ -4,8 +4,6 @@
 #include "WiFiUdp.h"
 #include <SoftwareSerial.h>
 
-#define LOG(x) Serial.println(x)
-
 #define UDP_TX_PACKET_MAX_SIZE 8192
  
 #define AP_SSID "EServer"
@@ -55,7 +53,7 @@ class EServer {
     ~EServer();
 
     bool tryAddDevice(EDevice* dev);
-    bool tryFindDevice(int id, EDevice* dev = nullptr);
+    EDevice* tryFindDevice(int id);
     
     void startAccessPoint();
     void printDevices();

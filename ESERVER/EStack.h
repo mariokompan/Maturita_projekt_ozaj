@@ -1,5 +1,7 @@
 #pragma once
 
+#define LOGX(x) Serial.print(x + String(", "))
+
 class StackItem{
     String _data;
     StackItem* _next;
@@ -29,13 +31,38 @@ class EStack{
 
   EStack(unsigned int max_size): _max_size(max_size), _first(nullptr), _last(nullptr), _size(0) {};
 
+  void vypisZasobnika(){
+    StackItem* var = _first;
+    while(var != nullptr){
+     LOGX(var->getData());
+     var = var->getNext();
+    }
+  }
+
   unsigned int getSize() {return _size;}
   unsigned int getMaxSize() {return _max_size;}
 
   bool isEmpty() {return _size==0 ? 1 : 0;}
   bool isFull() {return _size == _max_size ? 1 : 0;}
 
-  bool push(String data) {
+
+  bool pushFront(String data){
+    if (_size +1 > _max_size){
+      return false;
+    }
+    StackItem* temp = new StackItem(data);
+    if (!_first){
+      _last = temp;
+    }
+    else{
+      temp->setNext(_first);
+    }
+    _first = temp;
+    _size++;
+    return true;
+  }
+  
+  bool push(String data) { // push back
     if (_size+1 > _max_size) {
       return false;
     }
