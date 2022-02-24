@@ -30,7 +30,7 @@ void EServer::mainThread() {
         break;
       }
       case 2 : {
-        //sendPackets();
+        sendPackets();
         break;
       }
       default: 
@@ -169,8 +169,12 @@ void EServer::parseParams() {
 
 bool EServer::trySendDataToSerial() {
   if (_packetSent == 'X' && _responseSender == 'D'){
-    serverSerial->println(_packetContent);
-    Serial.println("Bolo poslane " + _packetContent);
+    while(!_buffer->isEmpty()){
+      String bufferData = _buffer->pop();
+      serverSerial->println(bufferData);
+      Serial.println("Bolo poslané: " + bufferData);
+    }
+    _buffer->clear();
     Serial.println("Hodnoty packetSent " + _packetSent);
     Serial.println("Hodnoty responseSender " + _responseSender);
     _packetSent = 'Y';
@@ -212,15 +216,15 @@ void EServer::sendPackets() {
   for (int i = 0; i < _lWritten; i++) {
     if (_devices[i]->getLIStored() == _devices[i]->getLastIDSent()){continue;}
     lastActIDSent[i] = _devices[i]->getLastIDSent();
-    //Serial.println(lastActIDSent[i]);
     int tempPos = _devices[i]->getLSPos();
     _sdCard->getData(_devices[i]->getFileName(),*_buffer, _devices[i]->getLSPos());
     tempPos = _devices[i]->getLSPos() - tempPos;
     lastActIDSent[i] = String(lastActIDSent[i].toInt() + tempPos);
-  } 
+  }
   listenFromServer();
   while (!_buffer->isEmpty()) {
     contactServer();
+    listenFromServer();
     if (_packetSent == 'X' && _responseSender == 'D') {
         Serial.println("Posielam na server zo súboru na odoslanie");
         trySendDataToSerial(); 
