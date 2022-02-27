@@ -19,16 +19,22 @@
 #define PUMP_SIZE_CARD 2
 #define MAX_BUFFER_SIZE 15
 #define MAX_PACKET_PARAM 15
-#define MAX_RESEND_BUFFER_SIZE 10
+#define MAX_SEND_BUFFER_SIZE 10
 
 #define TO_SEND_DATA "/datatosend.txt"
 
 #define TEMP_FILE "/"
 
+enum ServerState{
+  isReady,
+  isNotReady
+};
+
 class EServer {
     bool isSenderAsked;
     char packet[UDP_TX_PACKET_MAX_SIZE];
     EStack* _buffer; // buffer pre incomming packety
+    EStack* _sendingBuffer;
     EStack* _packetParams;
 
     IPAddress* _local_IP;
@@ -36,6 +42,8 @@ class EServer {
     IPAddress* _subnet;
     unsigned char _responseSender;
     unsigned char _packetSent;
+
+    ServerState sState = isNotReady;
 
     ESD* _sdCard;
     EDevice* _devices[DEV_COUNT];

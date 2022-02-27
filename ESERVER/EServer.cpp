@@ -11,6 +11,7 @@ EServer::EServer(): _lWritten(0) {
   _sdCard = new ESD();
   Serial.println("Vytvoril som _sdCard");
   _buffer = new EStack(MAX_BUFFER_SIZE);
+  _sendingBuffer = new EStack(MAX_SEND_BUFFER_SIZE);
   Serial.println("Vytvoril som _buffer EStack");
   _packetParams = new EStack(MAX_PACKET_PARAM);
   _packetSent = 'X';
@@ -168,18 +169,13 @@ void EServer::parseParams() {
  */
 
 bool EServer::trySendDataToSerial() {
-  if (_packetSent == 'X' && _responseSender == 'D'){
-    while(!_buffer->isEmpty()){
-      String bufferData = _buffer->pop();
+  if (sState = ServerState.isReady){
+      String bufferData = _sendingBuffer->pop();
       serverSerial->println(bufferData);
       Serial.println("Bolo poslané: " + bufferData);
-    }
-    _buffer->clear();
-    Serial.println("Hodnoty packetSent " + _packetSent);
-    Serial.println("Hodnoty responseSender " + _responseSender);
-    _packetSent = 'Y';
-    _responseSender = 'T';
-    return true;
+      Serial.println("Hodnoty packetSent " + _packetSent);
+      Serial.println("Hodnoty responseSender " + _responseSender);
+      return true;
   }
   return false;
 }
@@ -214,26 +210,26 @@ bool EServer::trySendDataToSerial() {
 void EServer::sendPackets() {
   String lastActIDSent[_lWritten] = {}; 
   for (int i = 0; i < _lWritten; i++) {
+    if (_sendingBuffer->isFull()) {break;}
     if (_devices[i]->getLIStored() == _devices[i]->getLastIDSent()){continue;}
+    
     lastActIDSent[i] = _devices[i]->getLastIDSent();
     int tempPos = _devices[i]->getLSPos();
-    _sdCard->getData(_devices[i]->getFileName(),*_buffer, _devices[i]->getLSPos());
+    _sdCard->getData(_devices[i]->getFileName(),*_sendingBuffer, _devices[i]->getLSPos());
     tempPos = _devices[i]->getLSPos() - tempPos;
     lastActIDSent[i] = String(lastActIDSent[i].toInt() + tempPos);
   }
-  listenFromServer();
-  while (!_buffer->isEmpty()) {
+  while (!_sendingBuffer->isEmpty()) {
     contactServer();
     listenFromServer();
-    if (_packetSent == 'X' && _responseSender == 'D') {
+    if (sState = ServerState.isReady) {
         Serial.println("Posielam na server zo súboru na odoslanie");
         trySendDataToSerial(); 
-        Serial.println("Posielam na server");
-        trySendDataToSerial();
-        _packetParams->clear();
+        sState = isNotReady;
     } 
-    else if (_packetSent == 'Y' && _responseSender == 'D'){
-      Serial.println("Server neodpovedal");
+    else if (sState == ServerState.isNotReady){
+      Serial.println("Server neodpovedal alebo ma plny buffer");
+      return;
     }
     delay(10);
   }       
@@ -324,28 +320,13 @@ void EServer::doStuffPacket() {
   */
 
 void EServer::listenFromServer() {
-  if (_packetSent == 'Y' && _responseSender == 'D' && 
-  serverSerial->available() && (serverSerial->readString()).indexOf("YesImHere")) {
-    _packetSent = 'X';
-    _responseSender = 'D';
-    Serial.println("Odpovedal mi");
-  }
-  if (_packetSent == 'Y' && _responseSender == 'T' &&
-  serverSerial->available() && (serverSerial->readString()).indexOf("IGotIt")) {
-    _packetContent = "";
-    _packetSent = 'X';
-    _responseSender = 'X';
+  if (serverSerial->available() && (serverSerial->readString()).indexOf("YesImHere")) {
+    sState = isReady;
   }
 }
 
 bool EServer::contactServer() {
-  if (_packetSent == 'X' && _responseSender == 'X') {
   serverSerial->println("HelloMyFriend");
-  _packetSent = 'Y';
-  _responseSender = 'D';
-  return true;
-  }
-  return false;
 }
 
 void EServer::startAccessPoint() {

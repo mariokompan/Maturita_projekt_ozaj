@@ -52,7 +52,7 @@ void ESD::getData(String fileName, EStack& stack, int& pos){
     _file->seek(pos);
   }
   String temp;
-  for(int i = 0; i < stack.getMaxSize(); i++){
+  while (!stack.isFull()){
     Serial.println("Citam zo suboru");
     temp = _file->readStringUntil('\n');
     if (temp.isEmpty()) {
