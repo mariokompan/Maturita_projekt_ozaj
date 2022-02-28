@@ -275,7 +275,7 @@ void EServer::listenFromServer() {
   if (serverSerial->available() && (serverSerial->readString()).indexOf("YesImHere")) {
     sState = isReady;
   }
-  else if ((serverSerial->readString()).indexOf("PosielamIDaPOS")){
+  else if (serverSerial->available() && (serverSerial->readString()).indexOf("PosielamIDaPOS")){
     EDevice* dev;
     dev = tryFindDevice(serverSerial->readString().toInt());
     if (dev != nullptr){

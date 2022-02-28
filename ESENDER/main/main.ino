@@ -1,12 +1,17 @@
 #include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include "EStack.h"
+
+#define MAX_BUFFER_SIZE 30
 
 SoftwareSerial ServerSerial(14, 13); //D7, D8 || RX, TX
 WiFiClient SenderClient;
 PubSubClient client(SenderClient);
 
 char msgmqtt[50];
+
+EStack* eBuffer;
 
 void reconnectmqttserver() {
   while (!client.connected()) {
@@ -37,6 +42,7 @@ void setup() {
   ServerSerial.begin(115200);
   ServerSerial.setTimeout(10);
   Serial.begin(115200);
+  eBuffer = new EStack(MAX_BUFFER_SIZE);
   /*WiFi.disconnect();
   delay(3000);
   Serial.println("START");
@@ -59,11 +65,11 @@ void loop()
     String temp = ServerSerial.readString();
     if (temp.length() > 0) {
       if (temp.indexOf("HelloMyFriend")){
-        ServerSerial.println("YesImHere");
+        ServerSerial.println("YesImHere"); //ak je dostupny server
         Serial.println(temp);
       }
       if (temp.indexOf(".txt")){
-        ServerSerial.println("IGotIt");
+        ServerSerial.println("PosielamIDaPOS"); //ak poslal na server
         Serial.println(temp);
       }
     }
