@@ -40,8 +40,6 @@ class EServer {
     IPAddress* _local_IP;
     IPAddress* _gateway;
     IPAddress* _subnet;
-    unsigned char _responseSender;
-    unsigned char _packetSent;
 
     ServerState sState = isNotReady;
 
@@ -52,8 +50,6 @@ class EServer {
     WiFiClass* wifi;
     SoftwareSerial *serverSerial;
     String _packetContent;
-
-    int _timeOutCounter;
     
   public:
 

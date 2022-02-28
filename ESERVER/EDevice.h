@@ -43,7 +43,7 @@ public:
   String getLIStored() {return _lastIDStored;}; // ID Posledne ulozene
   String getLastIDSent() {return _lastIDPacketSent;}; // ID posledne odoslane
   String getRoom() {return _room;}; 
-  int& getLSPos() {return _lastSentPosition;}// pozicia v subore
+  int& getLSPos() {return _lastSentPosition;} // pozicia v subore
   bool getSending() {return _sending;};
   String& getFileName() {return _fileName;}
   String getLastSentFileName() {return _lastSentFileName;}

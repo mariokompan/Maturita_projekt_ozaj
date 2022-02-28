@@ -14,9 +14,6 @@ EServer::EServer(): _lWritten(0) {
   _sendingBuffer = new EStack(MAX_SEND_BUFFER_SIZE);
   Serial.println("Vytvoril som _buffer EStack");
   _packetParams = new EStack(MAX_PACKET_PARAM);
-  _packetSent = 'X';
-  _responseSender = 'X';
-  _timeOutCounter = 0;
 }
 
 void EServer::mainThread() {
@@ -94,11 +91,6 @@ void EServer::writeToDataToSendFile(){
   Serial.println("Subor zapisany do dat na odoslanie");
 }
 
-//String* EServer::getFromCard() {
- // return (_sdCard->getData(TO_SEND_DATA));
- 
-//}
-
 void EServer::continueRecievePacket() {
   Serial.println("Hello world");
 }
@@ -146,7 +138,6 @@ EDevice* EServer::tryFindDevice(int id){
 }
 
 void EServer::parseParams() {
-  //String packetData = _buffer->pop();
   String packetData = _packetContent;
   String packetUnit = "";
 
@@ -161,51 +152,15 @@ void EServer::parseParams() {
   _packetContent = "";
 }
 
-/*Ak je hodnota v packetSent X tak neposlal packet 
- * Ak je hodnota v packetSent Y tak odoslal packet
- * Ak je hodnota v responseSender X tak neposlal packet
- * Ak je hodnota v responseSender D tak poslal dotazovaci
- * Ak je hodnota v responseSender T tak poslal datovy packet
- */
-
 bool EServer::trySendDataToSerial() {
-  if (sState = ServerState.isReady){
+  if (sState == isReady){
       String bufferData = _sendingBuffer->pop();
       serverSerial->println(bufferData);
       Serial.println("Bolo poslané: " + bufferData);
-      Serial.println("Hodnoty packetSent " + _packetSent);
-      Serial.println("Hodnoty responseSender " + _responseSender);
       return true;
   }
   return false;
 }
-  /*if (!isSenderAsked){
-    serverSerial->println("&");
-    isSenderAsked = true;
-  }
-  else if (serverSerial->available()){
-    if ((serverSerial->readString()).indexOf("Y")){
-        serverSerial->println("^");
-        String gap = "";
-        while(!_packetParams->isEmpty()){
-          String temp = _packetParams->pop();
-          if (temp.isEmpty()){
-            return false;
-          }
-          else{
-            gap += temp + " ";
-          }
-        }
-        serverSerial->println(gap);
-        Serial.println("Poslané cez Serialku: " + gap);
-        isSenderAsked = false;
-        return true;
-    }
-    else if ((serverSerial->readString()).indexOf("N")){
-      return false;
-    }
-  }
-  return true;*/
 
 void EServer::sendPackets() {
   String lastActIDSent[_lWritten] = {}; 
@@ -222,12 +177,12 @@ void EServer::sendPackets() {
   while (!_sendingBuffer->isEmpty()) {
     contactServer();
     listenFromServer();
-    if (sState = ServerState.isReady) {
+    if (sState == isReady) {
         Serial.println("Posielam na server zo súboru na odoslanie");
         trySendDataToSerial(); 
         sState = isNotReady;
     } 
-    else if (sState == ServerState.isNotReady){
+    else if (sState == isNotReady){
       Serial.println("Server neodpovedal alebo ma plny buffer");
       return;
     }
@@ -278,7 +233,6 @@ void EServer::doStuffPacket() {
       }
       case '2' : {
         parseParams();
-        //_packetParams->vypisZasobnika();
         _packetParams->pop();
         _packetParams->pop();
         int findedId = _packetParams->pop().toInt();
@@ -315,13 +269,20 @@ void EServer::doStuffPacket() {
  * Ak je hodnota v responseSender X tak neposlal packet
  * Ak je hodnota v responseSender D tak poslal dotazovaci
  * Ak je hodnota v responseSender T tak poslal datovy packet
- 
-  (_packetSent == 'X' && _responseSender == 'D')
-  */
+ */
 
 void EServer::listenFromServer() {
   if (serverSerial->available() && (serverSerial->readString()).indexOf("YesImHere")) {
     sState = isReady;
+  }
+  else if ((serverSerial->readString()).indexOf("PosielamIDaPOS")){
+    EDevice* dev;
+    dev = tryFindDevice(serverSerial->readString().toInt());
+    if (dev != nullptr){
+      dev->setLastSentPosition(serverSerial->readString().toInt());
+    }
+    else{
+    }
   }
 }
 
