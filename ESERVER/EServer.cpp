@@ -188,10 +188,10 @@ void EServer::sendPackets() {
     }
     delay(10);
   }       
-  for (int i = 0; i < _lWritten; i++) {
+  /* for (int i = 0; i < _lWritten; i++) {
     _sdCard->replaceLISentFile(_devices[i]->getLastSentFileName(), lastActIDSent[i]);
     Serial.println(lastActIDSent[i]);
-  }
+  }*/
 }
 
 void EServer::doStuffPacket() {
@@ -276,13 +276,13 @@ void EServer::listenFromServer() {
     sState = isReady;
   }
   else if (serverSerial->available() && (serverSerial->readString()).indexOf("PosielamIDaPOS")){
-    EDevice* dev;
-    dev = tryFindDevice(serverSerial->readString().toInt());
-    if (dev != nullptr){
-      dev->setLastSentPosition(serverSerial->readString().toInt());
-    }
-    else{
-    }
+      EDevice* dev;
+      dev = tryFindDevice(serverSerial->readString().toInt());
+      if (dev != nullptr){
+        String tempIDLastSent = serverSerial->readString();
+        dev->setLastSentPosition(tempIdLastSent.toInt());
+        _sdCard->replaceLISentFile(dev->getLastSentFileName(), tempIDLastSent);
+      }    
   }
 }
 
