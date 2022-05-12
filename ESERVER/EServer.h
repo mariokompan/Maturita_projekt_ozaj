@@ -21,8 +21,6 @@
 #define MAX_PACKET_PARAM 15
 #define MAX_SEND_BUFFER_SIZE 10
 
-#define TO_SEND_DATA "/datatosend.txt"
-
 #define TEMP_FILE "/"
 
 enum ServerState{
